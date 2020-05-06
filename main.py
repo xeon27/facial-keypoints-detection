@@ -1,14 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from torchvision import transforms
 from data_prep import FacialKeypointsDataset
+from data_prep import Rescale, Normalize, RandomCrop
 
 train_path = "./data/training_frames_keypoints.csv"
 valid_path = "./data/test_frames_keypoints.csv"
 train_image_path = "./data/training"
 
-train_data = FacialKeypointsDataset(train_path, train_image_path)
+all_transforms = transforms.Compose([Rescale(250), RandomCrop(224), Normalize()])
+train_data = FacialKeypointsDataset(train_path, train_image_path, transform=all_transforms)
 
-print(len(train_data))
-# print(train_data[36]['image'].shape)
-# print(train_data[36]['key_pts'].shape)
+sample_idx = 567
+sample = train_data[sample_idx]
+
+print(sample['image'].shape)
