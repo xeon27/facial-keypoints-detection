@@ -48,9 +48,11 @@ def read_data(path, image_dir):
     
 # Class for Facial Keypoints data
 class FacialKeypointsDataset(Dataset):
-    def __init__(self, data_path, image_dir, transform=None, augment=None):
+    def __init__(self, data_path, image_dir, truncate=None, transform=None, augment=None):
         super(FacialKeypointsDataset, self).__init__()
         self.data = read_data(data_path, image_dir)
+        if truncate:
+            self.data = self.data[:truncate]
         self.transform = transform
         self.augmented = False
         if augment:
@@ -253,6 +255,10 @@ class ToTensor():
         # Convert from numpy array to tensor
         image = torch.from_numpy(image)
         key_pts = torch.from_numpy(key_pts)
+        
+        # Convert to type float
+        image = image.type(torch.FloatTensor)
+        key_pts = key_pts.type(torch.FloatTensor)
         
         return {"image": image, "key_pts": key_pts}
         

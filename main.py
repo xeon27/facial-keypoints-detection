@@ -14,38 +14,54 @@ valid_path = "./data/test_frames_keypoints.csv"
 train_image_path = "./data/training"
 
 all_transforms = transforms.Compose([Rescale(250), RandomCrop(224), Normalize(), ToTensor()])
-train_data = FacialKeypointsDataset(train_path, train_image_path, transform=all_transforms, augment=[])
+train_data = FacialKeypointsDataset(train_path, train_image_path, truncate=500, transform=all_transforms, augment=[])
 
 print(len(train_data))
-# sample_idx = 34
-# sample = train_data[sample_idx]
-# print(type(sample['image']))
-# print(sample['key_pts'].shape)
-# print(sample['image'].shape)
-# visualize_keypoints(sample['image'], sample['key_pts'])
 
-train_loader = DataLoader(train_data, batch_size=10, shuffle=True)
-print(len(train_loader))
+batch_size = 10
+train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False)
 
-# for batch in train_loader:
-    # print(batch['image'].shape)
-    # print(batch['key_pts'].shape)
-    # break
-    
-    
+
 # Define the network
 net = FKNet()
-print(net)
+# print(net)
 
 
 criterion = nn.SmoothL1Loss()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-# input = next(iter(train_loader))
-# optimizer.zero_grad()
 
-# output = net(input['image'])
-# print(output.shape)
+num_epochs = 2
 
-
-
+print("Training started . . .")
+for epoch in range(num_epochs):
+    # For loss in each epoch
+    running_loss = 0.0
+    
+    for batch_index, batch in enumerate(train_loader):
+        # Reset the gradients
+        optimizer.zero_grad()
+        
+        # Fetch image and target keypoints
+        image = batch['image']
+        target = batch['key_pts']
+        
+        # Resize to (batch_size, 136)
+        target = target.view(target.size()[0], -1)
+        
+        # Pass through network
+        output = net(image)
+        
+        # Calculate loss
+        loss = criterion(output, target)
+        batch_loss = loss.item()
+        running_loss += batch_loss
+        
+        # Update weights
+        optimizer.step()
+        
+        # Print average loss
+        if (batch_index + 1) % 10 == 0:
+            print("Epoch {}, Batch {}, Avg. loss: {}".format(epoch+1, batch_index+1, batch_loss))
+        
+    print("Epoch {} complete".format(epoch+1))
