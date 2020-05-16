@@ -1,6 +1,6 @@
 # Import libraries
-import os
 import argparse
+import os
 
 import torch
 from torchvision import transforms
@@ -54,10 +54,16 @@ def main(args):
 
     criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
+    
+    
+    # Create folder for log and model output
+    if not os.path.isdir(out_path):
+        os.mkdir(out_path)
 
 
-    print("Training started . . .")
     avg_epoch_loss = {"train": 0.0, "valid": 0.0}
+    
+    print("Training started . . .")
     for epoch in range(num_epochs):
     
         for mode in data_loader.keys():
@@ -95,18 +101,19 @@ def main(args):
             
             # Average train/valid loss for each epoch
             avg_epoch_loss[mode] = epoch_loss/len(data_loader[mode])
-            
-        print("Epoch {} complete, Avg. train loss: {}, Avg. valid loss: {} \n".format(\
-               epoch+1, avg_epoch_loss['train'], avg_epoch_loss['valid']))
+        
+        ckpt = "Epoch {} complete, Avg. train loss: {}, Avg. valid loss: {} \n".format(epoch+1, avg_epoch_loss['train'], avg_epoch_loss['valid'])
+        print(ckpt)
+        # Write to log file
+        with open(os.path.join(out_path, './logs.txt'), 'a') as f:
+            f.write(ckpt)
+        
     
     print("Training complete.")
-    
+        
     
     # Save model
-    if not os.path.isdir(out_path):
-        os.mkdir(out_path)
-    torch.save({"epochs": (epoch+1), "model": net.state_dict()}, \
-                os.path.join(out_path, './model.pth'))
+    torch.save({"epochs": (epoch+1), "model": net.state_dict()}, os.path.join(out_path, './model.pth'))
         
         
         
