@@ -71,8 +71,8 @@ def main(args):
             epoch_loss = 0.0
             
             for batch_index, batch in enumerate(data_loader[mode]):
+                # Reset the gradients
                 if mode == 'train':
-                    # Reset the gradients
                     optimizer.zero_grad()
                 
                 # Fetch image and target keypoints
@@ -87,11 +87,13 @@ def main(args):
                 
                 # Calculate loss
                 loss = criterion(output, target)
-                running_loss += loss.item()
                 
+                # Update weights
                 if mode == 'train':
-                    # Update weights
+                    loss.backward()
                     optimizer.step()
+                    
+                running_loss += loss.item()
                 
                 # Print average loss
                 if (batch_index + 1) % print_every == 0:
