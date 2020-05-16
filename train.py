@@ -5,7 +5,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch import nn, optim
 
-from model import FKNet
+from models.model import FKNet
 from utils.visualize_utils import visualize_keypoints
 from utils.data_utils import FacialKeypointsDataset, Rescale, Normalize, RandomCrop, Rotate, ToTensor
 
@@ -22,6 +22,7 @@ def main(args):
     batch_size = args.batch_size
     num_epochs = args.epochs
     lr = args.learning_rate
+    print_every = args.print_every
     
     
     # Combine all image transformations
@@ -40,6 +41,7 @@ def main(args):
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=True)
+    data_loader = {"train": train_loader, "valid": valid_loader}
 
 
     # Define the network
@@ -52,60 +54,49 @@ def main(args):
 
 
     print("Training started . . .")
+    avg_epoch_loss = {"train": 0.0, "valid": 0.0}
     for epoch in range(num_epochs):
-        # For loss in each epoch
-        running_loss = 0.0
-        
-        for batch_index, batch in enumerate(train_loader):
-            # Reset the gradients
-            optimizer.zero_grad()
+    
+        for mode in data_loader.keys():
+            running_loss = 0.0
+            epoch_loss = 0.0
             
-            # Fetch image and target keypoints
-            image = batch['image']
-            target = batch['key_pts']
+            for batch_index, batch in enumerate(data_loader[mode]):
+                if mode == 'train':
+                    # Reset the gradients
+                    optimizer.zero_grad()
+                
+                # Fetch image and target keypoints
+                image = batch['image']
+                target = batch['key_pts']
+                
+                # Resize to (batch_size, 136)
+                target = target.view(target.size()[0], -1)
+                
+                # Pass through network
+                output = net(image)
+                
+                # Calculate loss
+                loss = criterion(output, target)
+                running_loss += loss.item()
+                
+                if mode == 'train':
+                    # Update weights
+                    optimizer.step()
+                
+                # Print average loss
+                if (batch_index + 1) % print_every == 0:
+                    print("Epoch {}, Batch {}, Avg. {} loss: {}".format(epoch+1, batch_index+1, mode, (running_loss/print_every)))
+                    epoch_loss += running_loss
+                    running_loss = 0.0
             
-            # Resize to (batch_size, 136)
-            target = target.view(target.size()[0], -1)
+            # Average train/valid loss for each epoch
+            avg_epoch_loss[mode] = epoch_loss/len(data_loader[mode])
             
-            # Pass through network
-            output = net(image)
-            
-            # Calculate loss
-            loss = criterion(output, target)
-            batch_loss = loss.item()
-            running_loss += batch_loss
-            
-            # Update weights
-            optimizer.step()
-            
-            # Print average loss
-            if (batch_index + 1) % 10 == 0:
-                print("Epoch {}, Batch {}, Avg. train loss: {}".format(epoch+1, batch_index+1, batch_loss))
-         
-         
-        # Pass through validation set
-        val_loss = 0.0
-        for valid_batch_index, valid_batch in enumerate(valid_loader):
-            # Fetch image and target keypoints
-            image = valid_batch['image']
-            target = valid_batch['key_pts']
-            
-            # Resize to (batch_size, 136)
-            target = target.view(target.size()[0], -1)
-            
-            # Pass through network
-            output = net(image)
-            
-            # Calculate loss
-            loss = criterion(output, target)
-            val_loss += loss.item()
-            
-            # Print average loss
-            if (valid_batch_index + 1) % 10 == 0:
-                print("Epoch {}, Batch {}, Avg. val loss: {}".format(epoch+1, valid_batch_index+1, (val_loss/(valid_batch_index + 1))))
-            
-            
-        print("Epoch {} complete".format(epoch+1))
+        print("Epoch {} complete, Avg. train loss: {}, Avg. valid loss: {} \n".format(\
+               epoch+1, avg_epoch_loss['train'], avg_epoch_loss['valid']))
+    
+    print("Training complete.")
         
         
 if __name__ == "__main__":
@@ -125,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=10, help="Batch size for training")
     parser.add_argument("-lr", "--learning_rate", type=float, default=0.001, help="Learning rate for train event")
     parser.add_argument("--epochs", type=int, default=1, help="No. of training epochs")
+    parser.add_argument("--print_every", type=int, default=10, help="No. of batches complete before printing loss")
     
     args = parser.parse_args()
     
