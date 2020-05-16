@@ -1,7 +1,9 @@
 __*
 
+*.zip
+
 /.idea
 /data
 /scratch.py
 
-/snap/basic
+/snap/*

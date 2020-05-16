@@ -1,6 +1,7 @@
 # Import libraries
 import argparse
 import os
+from datetime import datetime
 
 import torch
 from torchvision import transforms
@@ -20,6 +21,8 @@ def main(args):
     train_image_path = args.train_data
     valid_image_path = args.valid_data
     out_path = args.out_path
+    trunc_data = args.trunc_data
+    
     input_size = args.input_size
     aug_angles = args.augment
     batch_size = args.batch_size
@@ -36,11 +39,11 @@ def main(args):
     if aug_angles:
         aug_transforms = [Rotate(angle) for angle in aug_angles]
     
-    train_data = FacialKeypointsDataset(train_path, train_image_path, truncate=500, transform=all_transforms, augment=aug_transforms)
-    valid_data = FacialKeypointsDataset(valid_path, valid_image_path, truncate=500, transform=all_transforms, augment=None)
+    train_data = FacialKeypointsDataset(train_path, train_image_path, truncate=trunc_data, transform=all_transforms, augment=aug_transforms)
+    valid_data = FacialKeypointsDataset(valid_path, valid_image_path, truncate=trunc_data, transform=all_transforms, augment=None)
 
-    print(len(train_data))
-    print(len(valid_data))
+    print("Train data: {}".format(len(train_data)))
+    print("Valid data: {}".format(len(valid_data)))
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=True)
@@ -51,16 +54,15 @@ def main(args):
     net = FKNet()
     # print(net)
 
-
     criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
-    
     
     # Create folder for log and model output
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
-
-
+    with open(os.path.join(out_path, './logs.txt'), 'a') as f:
+        f.write("Start time: {} \n".format(datetime.now()))
+        
     avg_epoch_loss = {"train": 0.0, "valid": 0.0}
     
     print("Training started . . .")
@@ -112,7 +114,9 @@ def main(args):
         
     
     print("Training complete.")
-        
+    
+    with open(os.path.join(out_path, './logs.txt'), 'a') as f:
+        f.write("End time: {}".format(datetime.now()))
     
     # Save model
     torch.save({"epochs": (epoch+1), "model": net.state_dict()}, os.path.join(out_path, './model.pth'))
@@ -131,6 +135,8 @@ if __name__ == "__main__":
     parser.add_argument("--valid_data", type=str, default="./data/test", 
                         help="Path to valid set of image data")
     parser.add_argument("--out_path", type=str, default="./snap", help="Path to save model snapshots")
+    parser.add_argument("--trunc_data", type=int, default=None, help="sample data to use for debug") 
+    
     parser.add_argument("--input_size", type=int, default=224, help="Image input size for model")
     parser.add_argument("--augment", type=int, nargs='+', default=None, 
                         help="List of angles in degrees to augment rotated image data")
