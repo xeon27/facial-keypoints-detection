@@ -1,6 +1,8 @@
 # Import libraries
+import os
 import argparse
 
+import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch import nn, optim
@@ -17,6 +19,7 @@ def main(args):
     valid_path = args.valid_path
     train_image_path = args.train_data
     valid_image_path = args.valid_data
+    out_path = args.out_path
     input_size = args.input_size
     aug_angles = args.augment
     batch_size = args.batch_size
@@ -97,6 +100,14 @@ def main(args):
                epoch+1, avg_epoch_loss['train'], avg_epoch_loss['valid']))
     
     print("Training complete.")
+    
+    
+    # Save model
+    if not os.path.isdir(out_path):
+        os.mkdir(out_path)
+    torch.save({"epochs": (epoch+1), "model": net.state_dict()}, \
+                os.path.join(out_path, './model.pth'))
+        
         
         
 if __name__ == "__main__":
@@ -110,6 +121,7 @@ if __name__ == "__main__":
                         help="Path to train set of image data")
     parser.add_argument("--valid_data", type=str, default="./data/test", 
                         help="Path to valid set of image data")
+    parser.add_argument("--out_path", type=str, default="./snap", help="Path to save model snapshots")
     parser.add_argument("--input_size", type=int, default=224, help="Image input size for model")
     parser.add_argument("--augment", type=int, nargs='+', default=None, 
                         help="List of angles in degrees to augment rotated image data")
