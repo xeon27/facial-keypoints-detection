@@ -52,7 +52,7 @@ def main(args):
 
     # Define the network
     net = FKNet()
-    # print(net)
+    print(net)
 
     criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -88,16 +88,18 @@ def main(args):
                 # Resize to (batch_size, 136)
                 target = target.view(target.size()[0], -1)
                 
-                # Pass through network
-                output = net(image)
-                
-                # Calculate loss
-                loss = criterion(output, target)
-                
-                # Update weights
-                if mode == 'train':
-                    loss.backward()
-                    optimizer.step()
+                # Calculate gradients only during training
+                with torch.set_grad_enabled(mode == 'train'):
+                    # Pass through network
+                    output = net(image)
+                    
+                    # Calculate loss
+                    loss = criterion(output, target)
+                    
+                    # Update weights
+                    if mode == 'train':
+                        loss.backward()
+                        optimizer.step()
                     
                 running_loss += loss.item()
                 
