@@ -70,7 +70,11 @@ def main(args):
     
         for mode in data_loader.keys():
             running_loss = 0.0
-            epoch_loss = 0.0
+            
+            if mode == 'train':
+                net.train()
+            else:
+                net.eval()
             
             for batch_index, batch in enumerate(data_loader[mode]):
                 # Reset the gradients
@@ -99,12 +103,10 @@ def main(args):
                 
                 # Print average loss
                 if (batch_index + 1) % print_every == 0:
-                    print("Epoch {}, Batch {}, Avg. {} loss: {}".format(epoch+1, batch_index+1, mode, (running_loss/print_every)))
-                    epoch_loss += running_loss
-                    running_loss = 0.0
+                    print("Epoch {}, Batch {}, Avg. {} loss: {}".format(epoch+1, batch_index+1, mode, loss.item()))
             
             # Average train/valid loss for each epoch
-            avg_epoch_loss[mode] = epoch_loss/len(data_loader[mode])
+            avg_epoch_loss[mode] = running_loss/len(data_loader[mode])
         
         ckpt = "Epoch {} complete, Avg. train loss: {}, Avg. valid loss: {} \n".format(epoch+1, avg_epoch_loss['train'], avg_epoch_loss['valid'])
         print(ckpt)
