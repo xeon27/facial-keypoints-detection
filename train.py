@@ -49,13 +49,17 @@ def main(args):
     valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=True)
     data_loader = {"train": train_loader, "valid": valid_loader}
 
-
+    # # debug
+    # sample = next(iter(train_loader))
+    # print(sample['image'].size())
+    # print(sample['key_pts'].size())
+    
     # Define the network
     net = FKNet()
     print(net)
 
     criterion = nn.SmoothL1Loss()
-    optimizer = optim.Adam(net.parameters(), lr=lr)
+    optimizer = optim.SGD(net.parameters(), lr=lr)
     
     # Create folder for log and model output
     if not os.path.isdir(out_path):
@@ -68,7 +72,7 @@ def main(args):
     print("Training started . . .")
     for epoch in range(num_epochs):
     
-        for mode in data_loader.keys():
+        for mode in ['train', 'valid']:
             running_loss = 0.0
             
             if mode == 'train':
@@ -86,20 +90,24 @@ def main(args):
                 target = batch['key_pts']
                 
                 # Resize to (batch_size, 136)
-                target = target.view(target.size()[0], -1)
+                target = target.view(target.size(0), -1)
                 
                 # Calculate gradients only during training
                 with torch.set_grad_enabled(mode == 'train'):
                     # Pass through network
                     output = net(image)
-                    
+                                   
                     # Calculate loss
                     loss = criterion(output, target)
                     
                     # Update weights
                     if mode == 'train':
+                        # print(net.conv1.weight.data[0])
                         loss.backward()
+                        # print(net.conv1.weight.grad.data[0])
                         optimizer.step()
+                        # print(net.conv1.weight.data[0])
+                        # break
                     
                 running_loss += loss.item()
                 
@@ -107,6 +115,7 @@ def main(args):
                 if (batch_index + 1) % print_every == 0:
                     print("Epoch {}, Batch {}, Avg. {} loss: {}".format(epoch+1, batch_index+1, mode, loss.item()))
             
+            # break
             # Average train/valid loss for each epoch
             avg_epoch_loss[mode] = running_loss/len(data_loader[mode])
         
