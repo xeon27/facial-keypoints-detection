@@ -49,10 +49,10 @@ def main(args):
     valid_loader = DataLoader(valid_data, batch_size=batch_size, shuffle=True)
     data_loader = {"train": train_loader, "valid": valid_loader}
 
-    # # debug
-    # sample = next(iter(train_loader))
-    # print(sample['image'].size())
-    # print(sample['key_pts'].size())
+    # debug
+    sample = next(iter(train_loader))
+    print(sample['image'].size())
+    print(sample['key_pts'].size())
     
     # Define the network
     net = FKNet()

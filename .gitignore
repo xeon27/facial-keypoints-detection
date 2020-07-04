@@ -3,7 +3,10 @@ __*
 *.zip
 
 /.idea
-/data
 /scratch.py
 
 /snap/*
+
+# train and test data
+/data/training
+/data/test
