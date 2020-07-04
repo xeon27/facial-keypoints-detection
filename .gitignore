@@ -10,3 +10,4 @@ __*
 # train and test data
 /data/training
 /data/test
+/data/*.zip
